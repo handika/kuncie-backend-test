@@ -1,0 +1,74 @@
+type User{
+  id: Int!
+  name: String!
+  email: String!
+  phoneNumber: String!
+  address: String!
+}
+
+type Product{
+  id: Int!
+  sku: String!
+  name: String!
+  price: Int!
+  qty: Int!
+  promotionId: Int!
+}
+
+type Transaction{
+  id: Int!
+  userId: Int!
+  grandTotal: Int!
+  details: [TransactionDetail!]!
+}
+
+type TransactionDetail{
+  id: Int!
+  productId: Int!
+  price: Int!
+  qty: Int!
+  subTotal: Int!
+  discount: Int!
+}
+
+input TransactionInput{
+  userId: Int!
+  grandTotal: Int!
+  details: [TransactionDetailInput!]!
+}
+
+input TransactionDetailInput{
+  productId: Int!
+  qty: Int!
+}
+
+type Promotion{
+  id: Int!
+  name: String!
+}
+
+type PromoPaylessRule{
+  promotionId: Int!
+  requirementQty: Int!
+  promoQty: Int!
+}
+
+type PromoDiscountRule{
+  promotionId: Int!
+  requirementQty: Int!
+  PercentageDiscount: Int!
+}
+
+type Query{
+  userByID(id: Int):User
+  allUsers:[User]
+  productByID(id: Int):Product!
+  allProducts:[Product]!
+  transactionByID(id: Int):Transaction
+}
+
+type Mutation{
+  createUser(name:String!,email:String!,phoneNumber:String!,address:String!):User!
+  createProduct(sku:String!,name:String!,price:Int!,qty:Int!):Product!
+  createTransaction(input: TransactionInput!): Transaction!
+}
