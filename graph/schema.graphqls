@@ -56,7 +56,12 @@ type PromoPaylessRule{
 type PromoDiscountRule{
   promotionId: Int!
   requirementQty: Int!
-  PercentageDiscount: Int!
+  percentageDiscount: Int!
+}
+
+type PromoFreeItemRule{
+  promotionId: Int!
+  freeProductId: Int!
 }
 
 type Query{

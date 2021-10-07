@@ -64,6 +64,11 @@ type ComplexityRoot struct {
 		RequirementQty     func(childComplexity int) int
 	}
 
+	PromoFreeItemRule struct {
+		FreeProductID func(childComplexity int) int
+		PromotionID   func(childComplexity int) int
+	}
+
 	PromoPaylessRule struct {
 		PromoQty       func(childComplexity int) int
 		PromotionID    func(childComplexity int) int
@@ -214,7 +219,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Product.Sku(childComplexity), true
 
-	case "PromoDiscountRule.PercentageDiscount":
+	case "PromoDiscountRule.percentageDiscount":
 		if e.complexity.PromoDiscountRule.PercentageDiscount == nil {
 			break
 		}
@@ -234,6 +239,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PromoDiscountRule.RequirementQty(childComplexity), true
+
+	case "PromoFreeItemRule.freeProductId":
+		if e.complexity.PromoFreeItemRule.FreeProductID == nil {
+			break
+		}
+
+		return e.complexity.PromoFreeItemRule.FreeProductID(childComplexity), true
+
+	case "PromoFreeItemRule.promotionId":
+		if e.complexity.PromoFreeItemRule.PromotionID == nil {
+			break
+		}
+
+		return e.complexity.PromoFreeItemRule.PromotionID(childComplexity), true
 
 	case "PromoPaylessRule.promoQty":
 		if e.complexity.PromoPaylessRule.PromoQty == nil {
@@ -547,7 +566,12 @@ type PromoPaylessRule{
 type PromoDiscountRule{
   promotionId: Int!
   requirementQty: Int!
-  PercentageDiscount: Int!
+  percentageDiscount: Int!
+}
+
+type PromoFreeItemRule{
+  promotionId: Int!
+  freeProductId: Int!
 }
 
 type Query{
@@ -1173,7 +1197,7 @@ func (ec *executionContext) _PromoDiscountRule_requirementQty(ctx context.Contex
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PromoDiscountRule_PercentageDiscount(ctx context.Context, field graphql.CollectedField, obj *model.PromoDiscountRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _PromoDiscountRule_percentageDiscount(ctx context.Context, field graphql.CollectedField, obj *model.PromoDiscountRule) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1192,6 +1216,76 @@ func (ec *executionContext) _PromoDiscountRule_PercentageDiscount(ctx context.Co
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.PercentageDiscount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PromoFreeItemRule_promotionId(ctx context.Context, field graphql.CollectedField, obj *model.PromoFreeItemRule) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PromoFreeItemRule",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PromotionID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PromoFreeItemRule_freeProductId(ctx context.Context, field graphql.CollectedField, obj *model.PromoFreeItemRule) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PromoFreeItemRule",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FreeProductID, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3480,8 +3574,40 @@ func (ec *executionContext) _PromoDiscountRule(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "PercentageDiscount":
-			out.Values[i] = ec._PromoDiscountRule_PercentageDiscount(ctx, field, obj)
+		case "percentageDiscount":
+			out.Values[i] = ec._PromoDiscountRule_percentageDiscount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var promoFreeItemRuleImplementors = []string{"PromoFreeItemRule"}
+
+func (ec *executionContext) _PromoFreeItemRule(ctx context.Context, sel ast.SelectionSet, obj *model.PromoFreeItemRule) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, promoFreeItemRuleImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PromoFreeItemRule")
+		case "promotionId":
+			out.Values[i] = ec._PromoFreeItemRule_promotionId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "freeProductId":
+			out.Values[i] = ec._PromoFreeItemRule_freeProductId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

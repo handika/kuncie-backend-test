@@ -4,8 +4,6 @@ import (
 	"kuncie/graph/model"
 	db "kuncie/internal/pkg/db/mysql"
 	"log"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 //CreateUser create's user
@@ -265,6 +263,10 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 
 	var grandTotal = 0
 	var totalDiscount = 0
+	var freeItems map[int]int
+	freeItems = map[int]int{}
+	var mainProductId = 0
+	var freeProductId = 0
 	for _, detail := range transaction.Details {
 		product, err := GetProductByID(&detail.ProductID)
 
@@ -276,15 +278,26 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 			return 0, nil
 		}
 
-		// var divQty = 0
-		// var promoPrice = 0
-		// var modQty = 0
-		// var regularPrice = 0
-		// var subTotalPrice = 0
 		var discount = 0
+		freeItems[product.ID] = detail.Qty
 
 		if product.PromotionID == 1 {
+			stmt, err := db.Db.Prepare("select * from promo_free_item_rules pfir where pfir.promotion_id = ? ;")
+			if err != nil {
+				return 0, err
+			}
 
+			row, err := stmt.Query(product.PromotionID)
+			var pfir model.PromoFreeItemRule
+			if row.Next() {
+				err := row.Scan(&pfir.PromotionID, &pfir.FreeProductID)
+				if err != nil {
+					return 0, err
+				}
+			}
+
+			mainProductId = product.ID
+			freeProductId = pfir.FreeProductID
 		} else if product.PromotionID == 2 {
 			stmt, err := db.Db.Prepare("select * from promo_payless_rules ppr where ppr.promotion_id = ? ;")
 			if err != nil {
@@ -307,8 +320,6 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 				var regularPrice = modQty * product.Price
 				var subTotalPrice = detail.Qty * product.Price
 				discount = subTotalPrice - (promoPrice + regularPrice)
-
-				spew.Dump(divQty, promoPrice, modQty, regularPrice)
 			}
 		} else if product.PromotionID == 3 {
 			stmt, err := db.Db.Prepare("select * from promo_discount_rules pdr where pdr.promotion_id = ? ;")
@@ -327,8 +338,6 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 
 			if detail.Qty >= pdr.RequirementQty {
 				discount = (detail.Qty * product.Price) * pdr.PercentageDiscount / 100
-
-				spew.Dump(detail.Qty, product.Price, pdr.PercentageDiscount)
 			}
 		}
 
@@ -362,6 +371,77 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 		totalDiscount = totalDiscount + discount
 	}
 
+	var limitBuy, limitGet int
+	for key, item := range freeItems {
+		if key == mainProductId {
+			limitBuy = item
+		}
+
+		if key == freeProductId {
+			limitGet = item
+		}
+	}
+
+	if limitBuy >= limitGet {
+		stmt, err := db.Db.Prepare("select id, price from products where id = ? ;")
+		if err != nil {
+			return 0, err
+		}
+
+		row, err := stmt.Query(freeProductId)
+		var prod model.Product
+		if row.Next() {
+			err := row.Scan(&prod.ID, &prod.Price)
+			if err != nil {
+				return 0, err
+			}
+		}
+
+		stmt, err = db.Db.Prepare("UPDATE transaction_details SET discount=? WHERE transaction_id=? and product_id=?")
+		if err != nil {
+			log.Fatal(err)
+			return 0, err
+		}
+
+		var discount = limitGet * prod.Price
+		res, err = stmt.Exec(discount, id, freeProductId)
+		if err != nil {
+			log.Fatal(err)
+			return 0, err
+		}
+
+		totalDiscount = totalDiscount + discount
+	} else {
+		stmt, err := db.Db.Prepare("select id, price from products where id = ? ;")
+		if err != nil {
+			return 0, err
+		}
+
+		row, err := stmt.Query(freeProductId)
+		var prod model.Product
+		if row.Next() {
+			err := row.Scan(&prod.ID, &prod.Price)
+			if err != nil {
+				return 0, err
+			}
+		}
+
+		stmt, err = db.Db.Prepare("UPDATE transaction_details SET discount=? WHERE transaction_id=? and product_id=?")
+		if err != nil {
+			log.Fatal(err)
+			return 0, err
+		}
+
+		var discount = limitBuy * prod.Price
+		res, err = stmt.Exec(limitBuy*prod.Price, id, freeProductId)
+		if err != nil {
+			log.Fatal(err)
+			return 0, err
+		}
+
+		totalDiscount = totalDiscount + discount
+	}
+
 	grandTotal = grandTotal - totalDiscount
 
 	stmt, err = db.Db.Prepare("UPDATE transactions SET grand_total=? WHERE id=?")
@@ -379,31 +459,4 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 	defer stmt.Close()
 	log.Println("Row inserted!!")
 	return int(id), nil
-}
-
-func CheckPromoPaylessRule(product model.Product) (discount float32) {
-	stmt, err := db.Db.Prepare("select * from promo_payless_rules ppr where ppr.promotion_id = ? ;")
-	if err != nil {
-		return 0
-	}
-
-	row, err := stmt.Query(2)
-	var ppr model.PromoPaylessRule
-	if row.Next() {
-		err := row.Scan(&ppr.PromotionID, &ppr.RequirementQty, &ppr.PromoQty)
-		if err != nil {
-			return 0
-		}
-	}
-
-	if product.Qty >= ppr.RequirementQty {
-		var divQty = product.Qty / ppr.RequirementQty
-		var promoPrice = divQty * ppr.PromoQty * product.Price
-		var modQty = product.Qty % ppr.RequirementQty
-		var regularPrice = modQty * product.Price
-
-		spew.Dump(promoPrice, regularPrice)
-	}
-
-	return 0
 }
