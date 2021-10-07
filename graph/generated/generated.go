@@ -61,7 +61,7 @@ type ComplexityRoot struct {
 	PromoDiscountRule struct {
 		PercentageDiscount func(childComplexity int) int
 		PromotionID        func(childComplexity int) int
-		RequirementQty     func(childComplexity int) int
+		RequirementMinQty  func(childComplexity int) int
 	}
 
 	PromoFreeItemRule struct {
@@ -233,12 +233,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PromoDiscountRule.PromotionID(childComplexity), true
 
-	case "PromoDiscountRule.requirementQty":
-		if e.complexity.PromoDiscountRule.RequirementQty == nil {
+	case "PromoDiscountRule.requirementMinQty":
+		if e.complexity.PromoDiscountRule.RequirementMinQty == nil {
 			break
 		}
 
-		return e.complexity.PromoDiscountRule.RequirementQty(childComplexity), true
+		return e.complexity.PromoDiscountRule.RequirementMinQty(childComplexity), true
 
 	case "PromoFreeItemRule.freeProductId":
 		if e.complexity.PromoFreeItemRule.FreeProductID == nil {
@@ -565,7 +565,7 @@ type PromoPaylessRule{
 
 type PromoDiscountRule{
   promotionId: Int!
-  requirementQty: Int!
+  requirementMinQty: Int!
   percentageDiscount: Int!
 }
 
@@ -1162,7 +1162,7 @@ func (ec *executionContext) _PromoDiscountRule_promotionId(ctx context.Context, 
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PromoDiscountRule_requirementQty(ctx context.Context, field graphql.CollectedField, obj *model.PromoDiscountRule) (ret graphql.Marshaler) {
+func (ec *executionContext) _PromoDiscountRule_requirementMinQty(ctx context.Context, field graphql.CollectedField, obj *model.PromoDiscountRule) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1180,7 +1180,7 @@ func (ec *executionContext) _PromoDiscountRule_requirementQty(ctx context.Contex
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.RequirementQty, nil
+		return obj.RequirementMinQty, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3569,8 +3569,8 @@ func (ec *executionContext) _PromoDiscountRule(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "requirementQty":
-			out.Values[i] = ec._PromoDiscountRule_requirementQty(ctx, field, obj)
+		case "requirementMinQty":
+			out.Values[i] = ec._PromoDiscountRule_requirementMinQty(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

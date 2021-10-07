@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"kuncie/graph/model"
 	db "kuncie/internal/pkg/db/mysql"
 	"log"
@@ -241,23 +242,38 @@ func GetTransactionByID(id *int) (*model.Transaction, error) {
 }
 
 //CreateTransaction create's transaction
-func CreateTransaction(transaction model.Transaction) (int, error) {
-
-	stmt, err := db.Db.Prepare("INSERT INTO transactions(user_id, grand_total) VALUES(?,?)")
+func CreateTransaction(ctx context.Context, transaction model.Transaction) (int, error) {
+	// start db transaction
+	tx, err := db.Db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("db.Db.BeginTx got %s", err.Error())
 		return 0, err
 	}
 
-	res, err := stmt.Exec(transaction.UserID, 0)
+	res, err := tx.ExecContext(ctx, "INSERT INTO transactions(user_id, grand_total) VALUES(?,?)", transaction.UserID, 0)
+
 	if err != nil {
 		log.Fatal(err)
+
+		errRollback := tx.Rollback()
+		if errRollback != nil {
+			log.Printf("error rollback, got %s", err.Error())
+			return 0, errRollback
+		}
+
 		return 0, err
 	}
 
 	id, err := res.LastInsertId()
 	if err != nil {
 		log.Fatal(err)
+
+		errRollback := tx.Rollback()
+		if errRollback != nil {
+			log.Printf("error rollback, got %s", err.Error())
+			return 0, errRollback
+		}
+
 		return 0, err
 	}
 
@@ -271,6 +287,14 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 		product, err := GetProductByID(&detail.ProductID)
 
 		if err != nil {
+			log.Fatal(err)
+
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				log.Printf("error rollback, got %s", err.Error())
+				return 0, errRollback
+			}
+
 			return 0, err
 		}
 
@@ -284,6 +308,14 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 		if product.PromotionID == 1 {
 			stmt, err := db.Db.Prepare("select * from promo_free_item_rules pfir where pfir.promotion_id = ? ;")
 			if err != nil {
+				log.Fatal(err)
+
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Printf("error rollback, got %s", err.Error())
+					return 0, errRollback
+				}
+
 				return 0, err
 			}
 
@@ -292,6 +324,14 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 			if row.Next() {
 				err := row.Scan(&pfir.PromotionID, &pfir.FreeProductID)
 				if err != nil {
+					log.Fatal(err)
+
+					errRollback := tx.Rollback()
+					if errRollback != nil {
+						log.Printf("error rollback, got %s", err.Error())
+						return 0, errRollback
+					}
+
 					return 0, err
 				}
 			}
@@ -301,6 +341,14 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 		} else if product.PromotionID == 2 {
 			stmt, err := db.Db.Prepare("select * from promo_payless_rules ppr where ppr.promotion_id = ? ;")
 			if err != nil {
+				log.Fatal(err)
+
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Printf("error rollback, got %s", err.Error())
+					return 0, errRollback
+				}
+
 				return 0, err
 			}
 
@@ -309,6 +357,14 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 			if row.Next() {
 				err := row.Scan(&ppr.PromotionID, &ppr.RequirementQty, &ppr.PromoQty)
 				if err != nil {
+					log.Fatal(err)
+
+					errRollback := tx.Rollback()
+					if errRollback != nil {
+						log.Printf("error rollback, got %s", err.Error())
+						return 0, errRollback
+					}
+
 					return 0, err
 				}
 			}
@@ -324,46 +380,65 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 		} else if product.PromotionID == 3 {
 			stmt, err := db.Db.Prepare("select * from promo_discount_rules pdr where pdr.promotion_id = ? ;")
 			if err != nil {
+				log.Fatal(err)
+
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Printf("error rollback, got %s", err.Error())
+					return 0, errRollback
+				}
+
 				return 0, err
 			}
-
 			row, err := stmt.Query(product.PromotionID)
 			var pdr model.PromoDiscountRule
 			if row.Next() {
-				err := row.Scan(&pdr.PromotionID, &pdr.RequirementQty, &pdr.PercentageDiscount)
+				err := row.Scan(&pdr.PromotionID, &pdr.RequirementMinQty, &pdr.PercentageDiscount)
 				if err != nil {
+					log.Fatal(err)
+
+					errRollback := tx.Rollback()
+					if errRollback != nil {
+						log.Printf("error rollback, got %s", err.Error())
+						return 0, errRollback
+					}
+
 					return 0, err
 				}
 			}
 
-			if detail.Qty >= pdr.RequirementQty {
+			if detail.Qty >= pdr.RequirementMinQty {
 				discount = (detail.Qty * product.Price) * pdr.PercentageDiscount / 100
 			}
 		}
 
-		stmt, err = db.Db.Prepare("INSERT INTO transaction_details(transaction_id, product_id, price, qty, sub_total, discount) VALUES(?,?,?,?,?,?)")
-		if err != nil {
-			log.Fatal(err)
-			return 0, err
-		}
-
 		var subTotal = detail.Qty * product.Price
-		res, err = stmt.Exec(id, detail.ProductID, product.Price, detail.Qty, subTotal, discount)
+		_, err = tx.ExecContext(ctx, "INSERT INTO transaction_details(transaction_id, product_id, price, qty, sub_total, discount) VALUES(?,?,?,?,?,?)", id, detail.ProductID, product.Price, detail.Qty, subTotal, discount)
+
 		if err != nil {
 			log.Fatal(err)
+
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				log.Printf("error rollback, got %s", err.Error())
+				return 0, errRollback
+			}
+
 			return 0, err
 		}
 
 		var qty = product.Qty - detail.Qty
-		stmt, err = db.Db.Prepare("UPDATE products SET qty=? WHERE id=?")
-		if err != nil {
-			log.Fatal(err)
-			return 0, err
-		}
+		_, err = tx.ExecContext(ctx, "UPDATE products SET qty=? WHERE id=?", qty, product.ID)
 
-		res, err = stmt.Exec(qty, product.ID)
 		if err != nil {
 			log.Fatal(err)
+
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				log.Printf("error rollback, got %s", err.Error())
+				return 0, errRollback
+			}
+
 			return 0, err
 		}
 
@@ -385,6 +460,12 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 	if limitBuy >= limitGet {
 		stmt, err := db.Db.Prepare("select id, price from products where id = ? ;")
 		if err != nil {
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				log.Printf("error rollback, got %s", err.Error())
+				return 0, errRollback
+			}
+
 			return 0, err
 		}
 
@@ -393,20 +474,27 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 		if row.Next() {
 			err := row.Scan(&prod.ID, &prod.Price)
 			if err != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Printf("error rollback, got %s", err.Error())
+					return 0, errRollback
+				}
+
 				return 0, err
 			}
 		}
 
-		stmt, err = db.Db.Prepare("UPDATE transaction_details SET discount=? WHERE transaction_id=? and product_id=?")
-		if err != nil {
-			log.Fatal(err)
-			return 0, err
-		}
-
 		var discount = limitGet * prod.Price
-		res, err = stmt.Exec(discount, id, freeProductId)
+		_, err = tx.ExecContext(ctx, "UPDATE transaction_details SET discount=? WHERE transaction_id=? and product_id=?", discount, id, freeProductId)
 		if err != nil {
 			log.Fatal(err)
+
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				log.Printf("error rollback, got %s", err.Error())
+				return 0, errRollback
+			}
+
 			return 0, err
 		}
 
@@ -414,6 +502,14 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 	} else {
 		stmt, err := db.Db.Prepare("select id, price from products where id = ? ;")
 		if err != nil {
+			log.Fatal(err)
+
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				log.Printf("error rollback, got %s", err.Error())
+				return 0, errRollback
+			}
+
 			return 0, err
 		}
 
@@ -422,20 +518,29 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 		if row.Next() {
 			err := row.Scan(&prod.ID, &prod.Price)
 			if err != nil {
+				log.Fatal(err)
+
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Printf("error rollback, got %s", err.Error())
+					return 0, errRollback
+				}
+
 				return 0, err
 			}
 		}
 
-		stmt, err = db.Db.Prepare("UPDATE transaction_details SET discount=? WHERE transaction_id=? and product_id=?")
-		if err != nil {
-			log.Fatal(err)
-			return 0, err
-		}
-
 		var discount = limitBuy * prod.Price
-		res, err = stmt.Exec(limitBuy*prod.Price, id, freeProductId)
+		_, err = tx.ExecContext(ctx, "UPDATE transaction_details SET discount=? WHERE transaction_id=? and product_id=?", limitBuy*prod.Price, id, freeProductId)
 		if err != nil {
 			log.Fatal(err)
+
+			errRollback := tx.Rollback()
+			if errRollback != nil {
+				log.Printf("error rollback, got %s", err.Error())
+				return 0, errRollback
+			}
+
 			return 0, err
 		}
 
@@ -444,19 +549,34 @@ func CreateTransaction(transaction model.Transaction) (int, error) {
 
 	grandTotal = grandTotal - totalDiscount
 
-	stmt, err = db.Db.Prepare("UPDATE transactions SET grand_total=? WHERE id=?")
+	_, err = tx.ExecContext(ctx, "UPDATE transactions SET grand_total=? WHERE id=?", grandTotal, id)
 	if err != nil {
 		log.Fatal(err)
+
+		errRollback := tx.Rollback()
+		if errRollback != nil {
+			log.Printf("error rollback, got %s", err.Error())
+			return 0, errRollback
+		}
+
 		return 0, err
 	}
 
-	res, err = stmt.Exec(grandTotal, id)
+	// commit transaction
+	err = tx.Commit()
 	if err != nil {
 		log.Fatal(err)
+
+		errRollback := tx.Rollback()
+		if errRollback != nil {
+			log.Printf("error rollback, got %s", err.Error())
+			return 0, errRollback
+		}
+
 		return 0, err
 	}
 
-	defer stmt.Close()
+	// defer stmt.Close()
 	log.Println("Row inserted!!")
 	return int(id), nil
 }

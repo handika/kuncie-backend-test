@@ -44,7 +44,7 @@ func (r *mutationResolver) CreateTransaction(ctx context.Context, input model.Tr
 		Details: mapItemsFromInput(input.Details),
 	}
 
-	id, err := repository.CreateTransaction(transaction)
+	id, err := repository.CreateTransaction(ctx, transaction)
 	if err != nil {
 		return nil, err
 	}

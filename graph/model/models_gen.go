@@ -13,7 +13,7 @@ type Product struct {
 
 type PromoDiscountRule struct {
 	PromotionID        int `json:"promotionId"`
-	RequirementQty     int `json:"requirementQty"`
+	RequirementMinQty  int `json:"requirementMinQty"`
 	PercentageDiscount int `json:"percentageDiscount"`
 }
 

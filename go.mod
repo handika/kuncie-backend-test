@@ -5,7 +5,6 @@ go 1.15
 require (
 	github.com/99designs/gqlgen v0.14.0
 	github.com/containerd/containerd v1.5.7 // indirect
-	github.com/davecgh/go-spew v1.1.1
 	github.com/docker/docker v20.10.9+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/go-sql-driver/mysql v1.6.0

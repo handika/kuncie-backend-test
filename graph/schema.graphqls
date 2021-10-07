@@ -55,7 +55,7 @@ type PromoPaylessRule{
 
 type PromoDiscountRule{
   promotionId: Int!
-  requirementQty: Int!
+  requirementMinQty: Int!
   percentageDiscount: Int!
 }
 
