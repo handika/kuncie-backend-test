@@ -55,9 +55,8 @@ type TransactionDetailInput struct {
 }
 
 type TransactionInput struct {
-	UserID     int                       `json:"userId"`
-	GrandTotal int                       `json:"grandTotal"`
-	Details    []*TransactionDetailInput `json:"details"`
+	UserID  int                       `json:"userId"`
+	Details []*TransactionDetailInput `json:"details"`
 }
 
 type User struct {

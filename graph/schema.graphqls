@@ -33,7 +33,6 @@ type TransactionDetail{
 
 input TransactionInput{
   userId: Int!
-  grandTotal: Int!
   details: [TransactionDetailInput!]!
 }
 

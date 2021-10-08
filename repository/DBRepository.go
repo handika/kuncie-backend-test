@@ -206,7 +206,7 @@ func GetTransactionByID(id *int) (*model.Transaction, error) {
 		}
 	}
 
-	stmt, err = db.Db.Prepare("SELECT td.product_id, td.qty, td.sub_total FROM transaction_details td LEFT JOIN products p ON td.product_id = p.id WHERE td.transaction_id = ?")
+	stmt, err = db.Db.Prepare("SELECT td.product_id, td.price, td.qty, td.sub_total, td.discount FROM transaction_details td LEFT JOIN products p ON td.product_id = p.id WHERE td.transaction_id = ?")
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func GetTransactionByID(id *int) (*model.Transaction, error) {
 	var details []*model.TransactionDetail
 	for rows.Next() {
 		var detail model.TransactionDetail
-		rows.Scan(&detail.ProductID, &detail.Qty, &detail.SubTotal)
+		rows.Scan(&detail.ProductID, &detail.Price, &detail.Qty, &detail.SubTotal, &detail.Discount)
 		details = append(details, &detail)
 
 	}

@@ -1,0 +1,16 @@
+{
+    "debug": true,
+    "server": {
+      "address": "0.0.0.0:8080"
+    },
+    "context":{
+      "timeout":2
+    },
+    "database": {
+      "host": "mysql",
+      "port": "3306",
+      "user": "kuncie",
+      "pass": "kuncie",
+      "name": "kuncie_store"
+    }
+  }

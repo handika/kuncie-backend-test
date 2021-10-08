@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `transactions`;
+DROP TABLE IF EXISTS `transaction_details`;
+DROP TABLE IF EXISTS `schema_migrations`;
+DROP TABLE IF EXISTS `promotions`;
+DROP TABLE IF EXISTS `promo_payless_rules`;
+DROP TABLE IF EXISTS `promo_free_item_rules`;
+DROP TABLE IF EXISTS `promo_discount_rules`;
+DROP TABLE IF EXISTS `products`;

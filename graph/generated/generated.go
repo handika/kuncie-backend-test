@@ -543,7 +543,6 @@ type TransactionDetail{
 
 input TransactionInput{
   userId: Int!
-  grandTotal: Int!
   details: [TransactionDetailInput!]!
 }
 
@@ -3427,14 +3426,6 @@ func (ec *executionContext) unmarshalInputTransactionInput(ctx context.Context, 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
 			it.UserID, err = ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "grandTotal":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("grandTotal"))
-			it.GrandTotal, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
