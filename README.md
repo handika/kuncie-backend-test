@@ -54,7 +54,7 @@ $ docker-compose up
 **Step 3 Run Migration**
 
 ```
-$ migrate -database mysql://backend:backend@/backend -path ./sql up
+$ migrate -database mysql://backend:backend@/backend -path ./mysql up
 ```
 **Step 5 GraphQL Playground**
 
