@@ -70,8 +70,57 @@ Create Transaction
 curl 'http://localhost:8080/query' -H 'Accept-Encoding: gzip, deflate, br' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Connection: keep-alive' -H 'DNT: 1' -H 'Origin: http://localhost:8080' --data-binary '{"query":"# Write your query or mutation here\nmutation {\n  createTransaction(\n    input: {\n      userId: 1\n      details: [{\n        productId: 3\n        qty: 3\n      },\n      {\n        productId: 1\n        qty: 3\n      }]\n    }\n  ) {\n    id\n    userId\n    grandTotal\n    details {\n      productId\n      price\n      qty\n      subTotal\n      discount\n    }\n  }\n}\n"}' --compressed
 ```
 
+```
+mutation {
+  createTransaction(
+    input: {
+      userId: 1
+      details: [{
+        productId: 3
+        qty: 3
+      },
+      {
+        productId: 1
+        qty: 3
+      }]
+    }
+  ) {
+    id
+    userId
+    grandTotal
+    details {
+      productId
+      price
+      qty
+      subTotal
+      discount
+    }
+  }
+}
+
+```
+
 Get Transaction by ID
 
 ```
 curl 'http://localhost:8080/query' -H 'Accept-Encoding: gzip, deflate, br' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Connection: keep-alive' -H 'DNT: 1' -H 'Origin: http://localhost:8080' --data-binary '{"query":"# Write your query or mutation here\nquery {\n  transactionByID(\n    id: 1\n  ) {\n    id\n    grandTotal\n    userId\n    details {\n      productId\n      price\n      qty\n      subTotal\n      discount\n    }\n  }\n}\n"}' --compressed
+```
+```
+query {
+  transactionByID(
+    id: 31
+  ) {
+    id
+    grandTotal
+    userId
+    details {
+      productId
+      price
+      qty
+      subTotal
+      discount
+    }
+  }
+}
+
 ```
