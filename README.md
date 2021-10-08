@@ -1,4 +1,4 @@
-# kuncie-backend-test
+# Kuncie Backend Take Home Test
 
 Have you shopped online? Let’s imagine that you need to build the checkout backend service that will support different promotions with the given inventory.
 
@@ -24,3 +24,54 @@ Please write it in Golang or Node with a CI script that runs tests and produces 
 Finally, imagine that adding items to cart and checking out was a backend API. Please design a schema file for GraphQL on how you would do this.
 
 Thank you for your time and we look forward to reviewing your solution. If you have any questions, please feel free to contact us. Please send us a link to your git repo.
+
+# Database Schema
+
+![schema](https://user-images.githubusercontent.com/1314588/136503808-c7c479d4-2122-4fc6-9fd1-8327a9355ccf.png)
+
+# Building and Running The App
+
+**Prerequisites:**
+
+    Go 1.15.2
+    Docker
+    Docker Compose
+    Golang migrate (https://github.com/golang-migrate/migrate)
+
+**Step 1 Checkout**
+
+```
+$ git clone https://github.com/handika/kuncie-backend-test.git
+$ cd kuncie-backend-test
+```
+
+**Step 2 Start MySQL Service**
+
+```
+$ docker-compose up
+```
+
+**Step 3 Run Migration**
+
+```
+$ migrate -database mysql://backend:backend@/backend -path ./sql up
+```
+**Step 5 GraphQL Playground**
+
+```
+http://localhost:8080/
+```
+
+**Step 4 Calling APIs**
+
+Create Transaction
+
+```
+curl 'http://localhost:8080/query' -H 'Accept-Encoding: gzip, deflate, br' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Connection: keep-alive' -H 'DNT: 1' -H 'Origin: http://localhost:8080' --data-binary '{"query":"# Write your query or mutation here\nmutation {\n  createTransaction(\n    input: {\n      userId: 1\n      details: [{\n        productId: 3\n        qty: 3\n      },\n      {\n        productId: 1\n        qty: 3\n      }]\n    }\n  ) {\n    id\n    userId\n    grandTotal\n    details {\n      productId\n      price\n      qty\n      subTotal\n      discount\n    }\n  }\n}\n"}' --compressed
+```
+
+Get Transaction by ID
+
+```
+curl 'http://localhost:8080/query' -H 'Accept-Encoding: gzip, deflate, br' -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'Connection: keep-alive' -H 'DNT: 1' -H 'Origin: http://localhost:8080' --data-binary '{"query":"# Write your query or mutation here\nquery {\n  transactionByID(\n    id: 1\n  ) {\n    id\n    grandTotal\n    userId\n    details {\n      productId\n      price\n      qty\n      subTotal\n      discount\n    }\n  }\n}\n"}' --compressed
+```
