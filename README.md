@@ -56,13 +56,13 @@ $ docker-compose up
 ```
 $ migrate -database mysql://backend:backend@/backend -path ./mysql up
 ```
-**Step 5 GraphQL Playground**
+**Step 4 GraphQL Playground**
 
 ```
 http://localhost:8080/
 ```
 
-**Step 4 Calling APIs**
+**Step 5 Calling APIs**
 
 Create Transaction
 
